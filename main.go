@@ -3,30 +3,43 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
 func main() {
-	c := sync.NewCond(&sync.Mutex{})    // ❶
-	queue := make([]interface{}, 0, 10) // ❷
+	type Button struct { // ❶
+		Clicked *sync.Cond
+	}
+	button := Button{Clicked: sync.NewCond(&sync.Mutex{})}
 
-	removeFromQueue := func(delay time.Duration) {
-		time.Sleep(delay)
-		c.L.Lock()        // ❽
-		queue = queue[1:] // ❾
-		fmt.Println("Removed from queue")
-		c.L.Unlock() // ❿
-		c.Signal()   // ⓫
+	subscribe := func(c *sync.Cond, fn func()) { // ❷
+		var goroutineRunning sync.WaitGroup
+		goroutineRunning.Add(1)
+		go func() {
+			goroutineRunning.Done()
+			c.L.Lock()
+			defer c.L.Unlock()
+			c.Wait()
+			fn()
+		}()
+		goroutineRunning.Wait()
 	}
 
-	for i := 0; i < 10; i++ {
-		c.L.Lock()            // ❸
-		for len(queue) == 2 { // ❹
-			c.Wait() // ❺
-		}
-		fmt.Println("Adding to queue")
-		queue = append(queue, struct{}{})
-		go removeFromQueue(1 * time.Second) // ❻
-		c.L.Unlock()                        // ❼
-	}
+	var clickRegistered sync.WaitGroup // ❸
+	clickRegistered.Add(3)
+	subscribe(button.Clicked, func() { // ❹
+		fmt.Println("Maximizing window.")
+		clickRegistered.Done()
+	})
+	subscribe(button.Clicked, func() { // ❺
+		fmt.Println("Displaying annoying dialog box!")
+		clickRegistered.Done()
+	})
+	subscribe(button.Clicked, func() { // ❻
+		fmt.Println("Mouse clicked.")
+		clickRegistered.Done()
+	})
+
+	button.Clicked.Broadcast() // ❼
+
+	clickRegistered.Wait()
 }
