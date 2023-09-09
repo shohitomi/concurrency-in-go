@@ -2,22 +2,15 @@ package main
 
 import (
 	"fmt"
-	"sync"
+	"time"
 )
 
 func main() {
-	myPool := &sync.Pool{
-		New: func() interface{} {
-			fmt.Println("Creating new instance.")
-			return struct{}{}
-		},
-	}
-
-	myPool.Get() // ❶
-	fmt.Println("1")
-	instance := myPool.Get() // ❶
-	fmt.Println("2")
-	myPool.Put(instance) // ❷
-	fmt.Println("3")
-	myPool.Get() // ❸
+	stringStream := make(chan string)
+	go func() {
+		time.Sleep(1 * time.Second)
+		stringStream <- "Hello channels!" // ❶
+	}()
+	fmt.Println(<-stringStream) //
+	fmt.Println("Hello")
 }
