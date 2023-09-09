@@ -6,23 +6,18 @@ import (
 )
 
 func main() {
-	var count int
-
-	increment := func() {
-		count++
+	myPool := &sync.Pool{
+		New: func() interface{} {
+			fmt.Println("Creating new instance.")
+			return struct{}{}
+		},
 	}
 
-	var once sync.Once
-
-	var increments sync.WaitGroup
-	increments.Add(100)
-	for i := 0; i < 100; i++ {
-		go func() {
-			defer increments.Done()
-			once.Do(increment)
-		}()
-	}
-
-	increments.Wait()
-	fmt.Printf("Count is %d\n", count)
+	myPool.Get() // ❶
+	fmt.Println("1")
+	instance := myPool.Get() // ❶
+	fmt.Println("2")
+	myPool.Put(instance) // ❷
+	fmt.Println("3")
+	myPool.Get() // ❸
 }
