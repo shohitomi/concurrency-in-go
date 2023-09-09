@@ -1,26 +1,24 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 )
 
 func main() {
-	var stdoutBuff bytes.Buffer         // ❶
-	defer stdoutBuff.WriteTo(os.Stdout) // ❷
-
-	intStream := make(chan int, 4) // ❸
-	go func() {
-		defer close(intStream)
-		defer fmt.Fprintln(&stdoutBuff, "Producer Done.")
-		for i := 0; i < 5; i++ {
-			fmt.Fprintf(&stdoutBuff, "Sending: %d\n", i)
-			intStream <- i
-		}
-	}()
-
-	for integer := range intStream {
-		fmt.Fprintf(&stdoutBuff, "Received %v.\n", integer)
+	chanOwner := func() <-chan int {
+		resultStream := make(chan int, 5) // ❶
+		go func() {                       // ❷
+			defer close(resultStream) // ❸
+			for i := 0; i <= 5; i++ {
+				resultStream <- i
+			}
+		}()
+		return resultStream // ❹
 	}
+
+	resultStream := chanOwner()
+	for result := range resultStream { // ❺
+		fmt.Printf("Received: %d\n", result)
+	}
+	fmt.Println("Done receiving!")
 }
