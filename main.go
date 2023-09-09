@@ -2,23 +2,20 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 func main() {
-	chanOwner := func() <-chan int {
-		resultStream := make(chan int, 5) // ❶
-		go func() {                       // ❷
-			defer close(resultStream) // ❸
-			for i := 0; i <= 5; i++ {
-				resultStream <- i
-			}
-		}()
-		return resultStream // ❹
-	}
+	start := time.Now()
+	c := make(chan interface{})
+	go func() {
+		time.Sleep(5 * time.Second)
+		close(c) // ❶
+	}()
 
-	resultStream := chanOwner()
-	for result := range resultStream { // ❺
-		fmt.Printf("Received: %d\n", result)
+	fmt.Println("Blocking on read...")
+	select {
+	case <-c: // ❷
+		fmt.Printf("Unblocked %v later.\n", time.Since(start))
 	}
-	fmt.Println("Done receiving!")
 }
