@@ -2,22 +2,24 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 func main() {
-	intStream := make(chan int)
-	go func() {
-		defer close(intStream) // ❶
-		for i := 1; i <= 5; i++ {
-			intStream <- i
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
-	for integer := range intStream { // ❷
-		fmt.Printf("%v ", integer)
+	begin := make(chan interface{})
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			<-begin // ❶
+			fmt.Printf("%v has begun\n", i)
+		}(i)
 	}
 
-	fmt.Println("done")
+	fmt.Println("Unblocking goroutines...")
+	time.Sleep(3 * time.Second)
+	close(begin) // ❷
+	wg.Wait()
 }
