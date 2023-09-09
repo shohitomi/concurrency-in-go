@@ -2,11 +2,22 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 func main() {
 	intStream := make(chan int)
-	close(intStream)
-	integer, ok := <-intStream // ❶
-	fmt.Printf("(%v): %v", ok, integer)
+	go func() {
+		defer close(intStream) // ❶
+		for i := 1; i <= 5; i++ {
+			intStream <- i
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	for integer := range intStream { // ❷
+		fmt.Printf("%v ", integer)
+	}
+
+	fmt.Println("done")
 }
