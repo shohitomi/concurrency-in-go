@@ -7,11 +7,12 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	sayHello := func() {
-		defer wg.Done()
-		fmt.Println("hello")
-	}
+	salutation := "hello"
 	wg.Add(1)
-	go sayHello()
+	go func() {
+		defer wg.Done()
+		salutation = "welcome"
+	}()
 	wg.Wait()
+	fmt.Println(salutation)
 }
