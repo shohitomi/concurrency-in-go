@@ -2,15 +2,11 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 func main() {
-	stringStream := make(chan string)
-	go func() {
-		time.Sleep(1 * time.Second)
-		stringStream <- "Hello channels!" // ❶
-	}()
-	fmt.Println(<-stringStream) //
-	fmt.Println("Hello")
+	intStream := make(chan int)
+	close(intStream)
+	integer, ok := <-intStream // ❶
+	fmt.Printf("(%v): %v", ok, integer)
 }
