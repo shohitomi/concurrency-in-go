@@ -1,25 +1,26 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"sync"
-	"time"
+	"os"
 )
 
 func main() {
-	begin := make(chan interface{})
-	var wg sync.WaitGroup
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			<-begin // ❶
-			fmt.Printf("%v has begun\n", i)
-		}(i)
-	}
+	var stdoutBuff bytes.Buffer         // ❶
+	defer stdoutBuff.WriteTo(os.Stdout) // ❷
 
-	fmt.Println("Unblocking goroutines...")
-	time.Sleep(3 * time.Second)
-	close(begin) // ❷
-	wg.Wait()
+	intStream := make(chan int, 4) // ❸
+	go func() {
+		defer close(intStream)
+		defer fmt.Fprintln(&stdoutBuff, "Producer Done.")
+		for i := 0; i < 5; i++ {
+			fmt.Fprintf(&stdoutBuff, "Sending: %d\n", i)
+			intStream <- i
+		}
+	}()
+
+	for integer := range intStream {
+		fmt.Fprintf(&stdoutBuff, "Received %v.\n", integer)
+	}
 }
