@@ -6,16 +6,43 @@ import (
 )
 
 func main() {
-	hello := func(wg *sync.WaitGroup, id int) {
-		defer wg.Done()
-		fmt.Printf("Hello from %v!\n", id)
+	var count int
+	var lock sync.Mutex
+
+	increment := func() {
+		lock.Lock()         // ❶
+		defer lock.Unlock() // ❷
+		count++
+		fmt.Printf("Incrementing: %d\n", count)
 	}
 
-	const numGreeters = 5
-	var wg sync.WaitGroup
-	wg.Add(numGreeters)
-	for i := 0; i < numGreeters; i++ {
-		go hello(&wg, i+1)
+	decrement := func() {
+		lock.Lock()         // ❶
+		defer lock.Unlock() // ❷
+		count--
+		fmt.Printf("Decrementing: %d\n", count)
 	}
-	wg.Wait()
+
+	// インクリメント
+	var arithmetic sync.WaitGroup
+	for i := 0; i <= 5; i++ {
+		arithmetic.Add(1)
+		go func() {
+			defer arithmetic.Done()
+			increment()
+		}()
+	}
+
+	// デクリメント
+	for i := 0; i <= 5; i++ {
+		arithmetic.Add(1)
+		go func() {
+			defer arithmetic.Done()
+			decrement()
+		}()
+	}
+
+	arithmetic.Wait()
+
+	fmt.Println("Arithmetic complete.")
 }
